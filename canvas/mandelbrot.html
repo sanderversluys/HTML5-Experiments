@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script>
+
+// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+// http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+
+// requestAnimationFrame polyfill by Erik Mˆller
+// fixes from Paul Irish and Tino Zijdel
+
+(function() {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame'] 
+                                   || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+ 
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
+              timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+ 
+    if (!window.cancelAnimationFrame)
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+}());
+
+window.addEventListener('load', function() {
+
+    var canvas = document.getElementById('canvas');
+	var ctx = canvas.getContext('2d');
+	var canvasData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+	var i = 0;
+	var links=-2.2, rechts= 1, onder=-1.2, boven=1.2; // begingrenzen voor x en y
+	var zoomx=-.636, zoomy=.39; // coˆrdinaat van het punt waarnaar gezoomd wordt
+	// Mandelbrot
+	function computeColor(x, y) {
+		x = links + x/canvas.width *(rechts-links); 
+		y = onder + y/canvas.height * (boven - onder);
+		var x0 = x ; 
+		var y0 = y;
+
+		var iteration = 0;
+		var max_iteration = 100;
+
+		while (x * x + y * y <= 4 && iteration < max_iteration ) {
+			var xtemp = x*x - y*y + x0;
+			y = 2*x*y + y0;
+			x = xtemp;
+			iteration++;
+		}
+
+		return Math.round(767 * iteration / max_iteration);
+	}
+
+	function render() {
+		for (var x = 0; x < canvasData.width; x++) {
+			for (var y = 0; y < canvasData.height; y++) {
+				var color = computeColor(x, y);
+
+				// Index of the pixel in the array
+				var idx = (x + y * canvas.width) * 4;
+
+				// Update the color values of the pixel;
+				canvasData.data[idx + 0] = Math.min(255,color);
+				canvasData.data[idx + 1] = Math.max(0,color-512);
+				canvasData.data[idx + 2] = Math.max(0,Math.min(255,color-256));
+				canvasData.data[idx + 3] = 255;
+			}
+		}
+
+		ctx.putImageData(canvasData, 0, 0);
+	}
+
+	(function animloop(){
+    	window.requestAnimationFrame(animloop);
+		render();
+		i++; //hieronder wordt het venster 5 procent verkleind (zoom 95%)
+                         links=links+(zoomx-links)*.05; rechts=rechts-(rechts-zoomx)*.05;
+                         onder=onder+(zoomy-onder)*.05; boven=boven-(boven-zoomy)*.05;
+    })();
+
+});
+
+</script>
+</head>
+<body>
+<canvas id="canvas" width="640" height="480"/>
+</body>
+</html>
