@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    div.t { background-color: #ddd; position: absolute; }
+</style>
+<script>
+
+window.addEventListener('load', function() {
+
+	var margin = 100;
+
+	var count = 3;
+	var size = parseInt(Math.min(document.documentElement.clientWidth - margin*2, 
+								 document.documentElement.clientHeight - margin*2) / count);
+	
+	for (var i=0; i<count; i++) {
+	
+		for (var j=0; j<count; j++) {
+		
+			var div = document.createElement('div');
+			div.setAttribute('class', 't');
+			div.style.width = size+'px';
+			div.style.height = size+'px';		
+			div.style.left = i*size + margin + 'px';
+			div.style.top = j*size + margin + 'px';
+	
+			document.documentElement.appendChild(div);
+		}	
+		
+	}
+	
+});
+
+document.addEventListener('mousemove', function(e) {
+
+	console.log(e);
+	
+	var divs = document.getElementsByTagName('div');
+	
+	console.log(e.offsetX);
+	
+	for (i=0; i<divs.length; i++) {
+		
+		var xAngle = e.pageX / document.documentElement.clientWidth * 180;
+		var yAngle = e.pageY / document.documentElement.clientHeight * 180;
+		
+		divs[i].style.webkitTransform = "rotateX("+xAngle+"deg) rotateY("+yAngle+"deg)";
+	
+	}
+	
+});
+
+</script>
+</head>
+<body>
+</body>
+</html>
