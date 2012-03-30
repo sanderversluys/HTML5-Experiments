@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script>
+
+// http://paulirish.com/2011/requestanimationframe-for-smart-animating/
+// http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+
+// requestAnimationFrame polyfill by Erik Mˆller
+// fixes from Paul Irish and Tino Zijdel
+
+(function() {
+    var lastTime = 0;
+    var vendors = ['ms', 'moz', 'webkit', 'o'];
+    for(var x = 0; x < vendors.length && !window.requestAnimationFrame; ++x) {
+        window.requestAnimationFrame = window[vendors[x]+'RequestAnimationFrame'];
+        window.cancelAnimationFrame = window[vendors[x]+'CancelAnimationFrame'] 
+                                   || window[vendors[x]+'CancelRequestAnimationFrame'];
+    }
+ 
+    if (!window.requestAnimationFrame)
+        window.requestAnimationFrame = function(callback, element) {
+            var currTime = new Date().getTime();
+            var timeToCall = Math.max(0, 16 - (currTime - lastTime));
+            var id = window.setTimeout(function() { callback(currTime + timeToCall); }, 
+              timeToCall);
+            lastTime = currTime + timeToCall;
+            return id;
+        };
+ 
+    if (!window.cancelAnimationFrame)
+        window.cancelAnimationFrame = function(id) {
+            clearTimeout(id);
+        };
+}());
+
+function Lsystem(ctx) {
+    
+	this.i = 0; // keep track of render iteration
+	
+	this.l = 100;
+	this.h = 300;
+	
+	this.x = 0;
+	this.y = 0;
+	
+	this.dx = 0;
+	this.dy = 0;
+	
+	this.stack = [];
+	
+	this.ctx = ctx;
+	
+	this.max = 4;
+	
+	this.p = {
+		v1: 0.707,
+		v2: 0.866,
+		v3: 0.500
+	};
+
+}
+
+Lsystem.prototype.render = function() {
+	for (var stage=this.max; stage <= this.max; stage++) {
+		this.x = this.l+this.h/2;
+		this.y = this.l+this.h;
+		this.dx = 0;
+		this.dy = -10*(stage+1);
+		this.forward(stage);
+	}
+	this.i++;
+}
+
+Lsystem.prototype.update = function() {
+	return;
+	this.p.v1 = this.p.v1 + Math.sin(this.i / 100) / 500;
+	this.p.v2 = this.p.v2 + Math.sin(this.i / 100) / 500;
+	//this.p.v3 = this.p.v3 + Math.sin(this.i / 100) / 10000;
+}
+
+Lsystem.prototype.forward = function(stage) {
+	if (stage > 0) {
+		this.forward(stage-1);
+		this.save();
+		this.left();
+		this.forward(stage-1);
+		this.restore();
+		this.save();
+		this.right();
+		this.forward(stage-1);
+		this.restore();
+	} else {
+		this.ctx.moveTo(this.x, this.y);
+		this.ctx.lineTo(this.x+this.dx, this.y+this.dy);
+		
+		/*var ddx = this.x+this.dx;
+		var ddy = this.y+this.dy;
+		
+		this.ctx.bezierCurveTo(ddx-5, ddy-5, ddx+5, 
+        ddy+5, ddx, ddy);*/
+		
+		this.ctx.stroke();
+		this.x += this.dx;
+		this.y += this.dy;
+	}
+}
+
+Lsystem.prototype.left = function() {
+	var dx1 = this.dx;
+	this.dx = this.p.v1 * dx1 - this.p.v1 * this.dy;
+	this.dy = this.p.v1 * dx1 + this.p.v1 * this.dy;
+}
+
+Lsystem.prototype.right = function() {
+	var dx1 = this.dx;
+	this.dx = this.p.v2 * dx1 + this.p.v3 * this.dy;
+	this.dy = -this.p.v3 * dx1 + this.p.v2 * this.dy;
+}
+
+Lsystem.prototype.save = function() {
+	this.stack.push({x:this.x, 
+					 y:this.y, 
+					 dx:this.dx, 
+					 dy:this.dy});
+					
+		this.dx *= 0.7;
+		this.dy *= 0.7;
+}
+
+Lsystem.prototype.restore = function() {
+	var state = this.stack.pop();
+	this.x = state.x;
+	this.y = state.y;
+	this.dx = state.dx;
+	this.dy = state.dy;
+} 
+
+window.addEventListener('load', function() {
+
+	var canvas = document.getElementById('canvas');
+	var ctx = canvas.getContext('2d');
+	
+	var lsystem = new Lsystem(ctx);
+	
+	document.getElementById('more').addEventListener('click', function() {
+		lsystem.max++;
+	});
+	
+	document.getElementById('less').addEventListener('click', function() {
+		lsystem.max--;
+	});
+	
+	document.addEventListener('mousemove', function(e) {
+		return;
+		var o = e.offsetX - document.documentElement.clientWidth;
+		var f = o / document.documentElement.clientWidth;
+		
+		console.log(f);
+		
+		lsystem.p.v3 = f/3;
+		lsystem.p.v2 = f/2;
+		
+		canvas.width = canvas.width;
+		lsystem.render();
+	});
+	
+	function valueChanged(e) {
+		var value = e.target.value / 100.
+		if (e.target.id == 'v1') 
+			lsystem.p.v1 = value;
+		else if (e.target.id == 'v2')
+			lsystem.p.v2 = value;
+		else if (e.target.id == 'v3')
+			lsystem.p.v3 = value;
+		canvas.width = canvas.width;
+		lsystem.render();
+	}
+			
+	document.getElementById('v1').addEventListener('change', valueChanged);
+	document.getElementById('v2').addEventListener('change', valueChanged);
+	document.getElementById('v3').addEventListener('change', valueChanged);
+	
+	(function animloop(){
+    	//window.requestAnimationFrame(animloop);
+    	ctx.clearRect(0, 0, canvas.width, canvas.height);
+    	canvas.width = canvas.width;
+    	ctx.strokeStyle = "#333";
+	   	ctx.lineWidth = 2;
+    	lsystem.update();
+		lsystem.render();
+    })();
+
+});
+
+</script>
+</head>
+<body>
+
+<div>
+<button id="more">more</button>
+<button id="less">less</button>
+branches
+ | v1 <input id="v1" type="range" min="0" max="100" value="70" step="1" />
+ | v2 <input id="v2" type="range" min="0" max="100" value="80" step="1" />
+ | v3 <input id="v3" type="range" min="0" max="100" value="50" step="1" />
+
+</div>
+
+<canvas id="canvas" width="640" height="480"/>
+
+</body>
+</html>
